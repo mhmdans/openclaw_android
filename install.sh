@@ -72,13 +72,14 @@ fi
 run_step "Configuring Python setuptools" pip install setuptools --break-system-packages
 
 # =========================================================================
-# 2. Environment & DNS Settings (Idempotent)
+# 2. Environment & GYP/NDK Bypass Settings (Idempotent)
 # =========================================================================
-echo "🔧 2. Configuring Python compiler paths & Node IPv4 DNS resolution..."
+echo "🔧 2. Configuring Python compiler paths, GYP defines & Node IPv4 resolution..."
 
 PYTHON_PATH="$(which python3)"
 export PYTHON="$PYTHON_PATH"
 export NODE_OPTIONS="--dns-result-order=ipv4first --no-warnings"
+export GYP_DEFINES="android_ndk_path="
 
 if ! grep -q 'NODE_OPTIONS="--dns-result-order=ipv4first' ~/.bashrc 2>/dev/null; then
     echo 'export NODE_OPTIONS="--dns-result-order=ipv4first --no-warnings"' >> ~/.bashrc
@@ -86,6 +87,10 @@ fi
 
 if ! grep -q 'export PYTHON=' ~/.bashrc 2>/dev/null; then
     echo "export PYTHON=\"$PYTHON_PATH\"" >> ~/.bashrc
+fi
+
+if ! grep -q 'export GYP_DEFINES=' ~/.bashrc 2>/dev/null; then
+    echo 'export GYP_DEFINES="android_ndk_path="' >> ~/.bashrc
 fi
 
 # =========================================================================
@@ -103,6 +108,7 @@ cat > ~/.termux/boot/start-openclaw.sh << 'EOF'
 # Triggered on device boot via Termux:Boot companion app
 termux-wake-lock
 export NODE_OPTIONS="--dns-result-order=ipv4first --no-warnings"
+export GYP_DEFINES="android_ndk_path="
 pm2 resurrect
 EOF
 chmod +x ~/.termux/boot/start-openclaw.sh
@@ -112,7 +118,7 @@ chmod +x ~/.termux/boot/start-openclaw.sh
 # =========================================================================
 echo "📦 4. Installing OpenClaw and building native dependencies..."
 
-run_step "Compiling OpenClaw native modules" npm install -g openclaw@latest --build-from-source --engine-strict=false --no-audit --no-fund
+run_step "Compiling OpenClaw native modules" npm install -g openclaw@latest --allow-scripts --engine-strict=false --no-audit --no-fund
 
 echo "🛠️ 5. Setting up post-install patcher (~/patch-openclaw.sh)..."
 
@@ -145,7 +151,8 @@ if ! grep -q 'openclaw-update' ~/.bashrc 2>/dev/null; then
 # OpenClaw update wrapper to auto-apply Termux patches
 openclaw-update() {
     echo "Updating OpenClaw..."
-    npm install -g openclaw@latest --build-from-source --engine-strict=false --no-audit --no-fund
+    export GYP_DEFINES="android_ndk_path="
+    npm install -g openclaw@latest --allow-scripts --engine-strict=false --no-audit --no-fund
     ~/patch-openclaw.sh
     echo "OpenClaw updated and patched successfully!"
 }
@@ -153,14 +160,13 @@ EOF
 fi
 
 # =========================================================================
-# 5. Hardware Bridge (Pinned SHA Download + Explicit Failure Handling)
+# 5. Hardware Bridge (Latest Main Branch Download + Explicit Failure Handling)
 # =========================================================================
 echo "📱 6. Syncing phone_control.sh & building workspace context..."
 
 GITHUB_USER="mhmdans"
 GITHUB_REPO="openclaw_android"
-COMMIT_SHA="8f4b23a9d1c02e5f3b7d1e804f9c2a11032a9003"
-PHONE_CONTROL_URL="https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${COMMIT_SHA}/phone_control.sh"
+PHONE_CONTROL_URL="https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/phone_control.sh"
 
 if curl -sSL "$PHONE_CONTROL_URL" -o ~/phone_control.sh 2>> "$LOGFILE" && [ -s ~/phone_control.sh ]; then
     chmod +x ~/phone_control.sh
