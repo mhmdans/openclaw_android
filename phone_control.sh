@@ -1,21 +1,59 @@
-#!/data/data/com.termux/files/usr/bin/bash==============================================================================Phone Control CLI for Termux + Shizuku (Rish) / ADBExtended with Advanced AI Agent Capabilities==============================================================================CMD="$1"shiftrun_cmd() {if command -v rish &>/dev/null; thenrish -c "$*"
-elif command -v adb &>/dev/null; then
-adb shell "$"
-else
-eval "$"fi}case "$CMD" in# ==========================# 1. UI Interactions# ==========================tap)[ -z "$2" ] && { echo "Usage: tap  "; exit 1; }run_cmd input tap $1 $2;;swipe)[ -z "$4" ] && { echo "Usage: swipe     [duration_ms]"; exit 1; }run_cmd input swipe $1 $2 $3 $4 ${5:-300};;text)[ -z "$1" ] && { echo "Usage: text \"string\""; exit 1; }
-ESCAPED_TEXT=$(echo "$1" | sed 's/ /%s/g')run_cmd input text "$ESCAPED_TEXT";;enter) run_cmd input keyevent 66 ;;delete) run_cmd input keyevent 67 ;;space) run_cmd input keyevent 62 ;;tab) run_cmd input keyevent 61 ;;# ==========================
+cat << 'EOF' > /data/data/com.termux/files/usr/bin/phone_control
+#!/data/data/com.termux/files/usr/bin/bash
+
+# ==============================================================================
+# Phone Control CLI for Termux + Shizuku (Rish) / ADB
+# Extended with Advanced AI Agent Capabilities
+# ==============================================================================
+
+CMD="$1"
+shift
+
+run_cmd() {
+    if command -v rish &>/dev/null; then
+        rish -c "$*"
+    elif command -v adb &>/dev/null; then
+        adb shell "$*"
+    else
+        eval "$*"
+    fi
+}
+
+case "$CMD" in
+# ==========================
+# 1. UI Interactions
+# ==========================
+tap)
+    [ -z "$2" ] && { echo "Usage: phone_control tap <x> <y>"; exit 1; }
+    run_cmd input tap $1 $2
+    ;;
+swipe)
+    [ -z "$4" ] && { echo "Usage: phone_control swipe <x1> <y1> <x2> <y2> [duration_ms]"; exit 1; }
+    run_cmd input swipe $1 $2 $3 $4 ${5:-300}
+    ;;
+text)
+    [ -z "$1" ] && { echo "Usage: phone_control text \"string\""; exit 1; }
+    ESCAPED_TEXT=$(echo "$1" | sed 's/ /%s/g')
+    run_cmd input text "$ESCAPED_TEXT"
+    ;;
+enter) run_cmd input keyevent 66 ;;
+delete) run_cmd input keyevent 67 ;;
+space) run_cmd input keyevent 62 ;;
+tab) run_cmd input keyevent 61 ;;
+
+# ==========================
 # 2. System & Apps
 # ==========================
 open-app)
-    [ -z "$1" ] && { echo "Usage: open-app <package.name>"; exit 1; }
+    [ -z "$1" ] && { echo "Usage: phone_control open-app <package.name>"; exit 1; }
     run_cmd monkey -p $1 -c android.intent.category.LAUNCHER 1 > /dev/null 2>&1
     ;;
 close-app)
-    [ -z "$1" ] && { echo "Usage: close-app <package.name>"; exit 1; }
+    [ -z "$1" ] && { echo "Usage: phone_control close-app <package.name>"; exit 1; }
     run_cmd am force-stop "$1"
     ;;
 clear-app)
-    [ -z "$1" ] && { echo "Usage: clear-app <package.name>"; exit 1; }
+    [ -z "$1" ] && { echo "Usage: phone_control clear-app <package.name>"; exit 1; }
     run_cmd pm clear "$1"
     ;;
 list-apps)
@@ -25,12 +63,12 @@ current-app)
     run_cmd dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'
     ;;
 youtube-search)
-    [ -z "$1" ] && { echo "Usage: youtube-search \"query\""; exit 1; }
+    [ -z "$1" ] && { echo "Usage: phone_control youtube-search \"query\""; exit 1; }
     QUERY=$(echo "$1" | sed 's/ /+/g')
     run_cmd am start -a android.intent.action.VIEW -d "https://www.youtube.com/results?search_query=$QUERY"
     ;;
 open-url)
-    [ -z "$1" ] && { echo "Usage: open-url \"https://url.com\""; exit 1; }
+    [ -z "$1" ] && { echo "Usage: phone_control open-url \"https://url.com\""; exit 1; }
     run_cmd am start -a android.intent.action.VIEW -d "$1"
     ;;
 
@@ -45,8 +83,7 @@ wake) run_cmd input keyevent 224 ;;
 volume-up) run_cmd input keyevent 24 ;;
 volume-down) run_cmd input keyevent 25 ;;
 media)
-    # Commands: play, pause, next, previous
-    [ -z "$1" ] && { echo "Usage: media [play|pause|next|previous]"; exit 1; }
+    [ -z "$1" ] && { echo "Usage: phone_control media [play|pause|next|previous]"; exit 1; }
     run_cmd media dispatch $1
     ;;
 
@@ -69,7 +106,7 @@ quick-settings)
     run_cmd cmd statusbar expand-settings
     ;;
 brightness)
-    [ -z "$1" ] && { echo "Usage: brightness <0-255>"; exit 1; }
+    [ -z "$1" ] && { echo "Usage: phone_control brightness <0-255>"; exit 1; }
     run_cmd settings put system screen_brightness $1
     ;;
 
@@ -106,3 +143,7 @@ screenshot)
     echo "  Inspect:   battery, screen-state, device-info, ui-dump, screenshot"
     ;;
 esac
+EOF
+
+# Grant execute permissions
+chmod +x /data/data/com.termux/files/usr/bin/phone_control
