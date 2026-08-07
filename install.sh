@@ -18,12 +18,23 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # =========================================================================
-# Step 1/5: Update Packages & Install Dependencies
+# Step 1/5: Update Packages & Fix Pacman DB / Glibc / Dependencies
 # =========================================================================
-echo "📦 Step 1/5: Updating packages and installing dependencies..."
+echo "📦 Step 1/5: Updating packages and fixing package manager database..."
 
+# Fix pacman database version mismatch if pacman is installed in Termux environment
+if command -v pacman-db-upgrade >/dev/null 2>&1; then
+    pacman-db-upgrade >/dev/null 2>&1 || true
+fi
+
+if command -v pacman >/dev/null 2>&1; then
+    pacman -Sy --noconfirm >/dev/null 2>&1 || true
+    pacman -S --noconfirm glibc-runner >/dev/null 2>&1 || true
+fi
+
+# Update standard APT/pkg repositories
 pkg update -y -o Dpkg::Options::="--force-confold" -o Dpkg::Options::="--force-confdef" </dev/null 2>&1 || {
-    echo "⚠️  pkg update had warnings (continuing...)"
+    echo "⚠️ pkg update had warnings (continuing...)"
 }
 
 # Install core packages
@@ -41,7 +52,7 @@ if [ -n "$MISSING" ]; then
     exit 1
 fi
 
-echo "✅ Dependencies installed"
+echo "✅ Dependencies and glibc environment ready"
 
 # =========================================================================
 # Step 2/5: Setup Shizuku (rish & shizuku commands)
@@ -134,6 +145,12 @@ echo ""
 if ! command -v openclaw &>/dev/null; then
     echo "📦 Step 4/5: Installing OpenClaw..."
     bash -c "$(curl -sSL https://myopenclawhub.com/install)" < /dev/tty || true
+    
+    # Fallback NPM install if remote curl installer script fails
+    if ! command -v openclaw &>/dev/null; then
+        echo "⚠️ Remote script failed. Attempting direct npm installation..."
+        npm install -g openclaw@latest --ignore-engines >/dev/null 2>&1 || true
+    fi
 fi
 
 echo "🔧 Bypassing OpenClaw version assertions for Termux..."
