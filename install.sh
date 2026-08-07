@@ -126,7 +126,7 @@ if [ -f "$SHIZUKU_DIR/rish_shizuku.dex" ]; then
 fi
 
 # =========================================================================
-# Step 3/5: Fix Node.js IPv4 DNS & Apply Version Check Override
+# Step 3/5: Fix Node.js IPv4 DNS, Network Timeouts & Version Check Override
 # =========================================================================
 echo ""
 echo "🔧 Step 3/5: Applying Network & Node Runtime Fixes..."
@@ -135,7 +135,13 @@ if ! grep -q "NODE_OPTIONS=--dns-result-order=ipv4first" ~/.bashrc 2>/dev/null; 
     echo "export NODE_OPTIONS=\"--dns-result-order=ipv4first --no-warnings\"" >> ~/.bashrc
 fi
 export NODE_OPTIONS="--dns-result-order=ipv4first --no-warnings"
-echo "✅ Node runtime options applied"
+
+# Prevent NPM connection aborts on mobile networks
+npm config set fetch-retries 5 >/dev/null 2>&1 || true
+npm config set fetch-retry-mintimeout 20000 >/dev/null 2>&1 || true
+npm config set fetch-retry-maxtimeout 120000 >/dev/null 2>&1 || true
+
+echo "✅ Node runtime options and NPM network resiliency applied"
 
 # =========================================================================
 # Step 4/5: Install Official OpenClaw & Neutralize Version Checks
@@ -144,12 +150,14 @@ echo ""
 
 if ! command -v openclaw &>/dev/null; then
     echo "📦 Step 4/5: Installing OpenClaw..."
-    bash -c "$(curl -sSL https://myopenclawhub.com/install)" < /dev/tty || true
+    
+    # Run installer non-interactively without forcing /dev/tty
+    curl -sSL https://myopenclawhub.com/install | bash </dev/null || true
     
     # Fallback NPM install if remote curl installer script fails
     if ! command -v openclaw &>/dev/null; then
-        echo "⚠️ Remote script failed. Attempting direct npm installation..."
-        npm install -g openclaw@latest --ignore-engines >/dev/null 2>&1 || true
+        echo "⚠️ Remote script failed. Attempting direct npm installation with network retries..."
+        npm install -g openclaw@latest --ignore-scripts --ignore-engines --no-audit --no-fund || true
     fi
 fi
 
