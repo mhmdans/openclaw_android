@@ -157,8 +157,8 @@ fi
 # =========================================================================
 echo "📱 6. Syncing phone_control.sh & building workspace context..."
 
-GITHUB_USER="MuhammadAnsJaved"
-GITHUB_REPO="cloudbot-termux"
+GITHUB_USER="mhmdans"
+GITHUB_REPO="openclaw_android"
 COMMIT_SHA="8f4b23a9d1c02e5f3b7d1e804f9c2a11032a9003"
 PHONE_CONTROL_URL="https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${COMMIT_SHA}/phone_control.sh"
 
