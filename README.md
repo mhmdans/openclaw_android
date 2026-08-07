@@ -11,7 +11,7 @@ This project patches Node.js version constraints, links Shizuku ADB privileges d
 On a fresh installation of Termux, grant storage access and install curl:
 
 termux-setup-storage  
-pkg update && pkg install \-y curl
+apt update && apt full-upgrade 
 
 ### **2\. Run One-Line Installer**
 
